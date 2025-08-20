@@ -1,0 +1,40 @@
+{
+  "name": "three-pathfinding-3d",
+  "version": "1.0.5",
+  "description": "A 3D pathfinding library for Three.js， supporting navigation meshes (navmeshes) and various pathfinding algorithms.",
+  "main": "index.js",
+  "types": "./build/types/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./build/index.js",
+      "types": "./build/types/src/index.d.ts"
+    },
+    "./src": {
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc&&node ./esbuild.cjs",
+    "tsc": "tsc"
+  },
+  "keywords": [
+    "pathfinding",
+    "navigation",
+    "navmesh",
+    "navigation mesh"
+  ],
+  "author": "杨俊",
+  "license": "ISC",
+  "files": [
+    "./build",
+    "package.json"
+  ],
+  "peerDependencies": {
+    "three": ">=0.153.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.179.0",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.2"
+  }
+}
