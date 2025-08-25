@@ -84,7 +84,7 @@ async function init() {
         const _navmesh = gltf.scene.getObjectByName('Navmesh_Mesh') as THREE.Mesh;
 
         console.time('createZone()');
-        const zone = Pathfinding.createZone(_navmesh.geometry, 0);
+        const zone = Pathfinding.createZone(_navmesh.geometry);
         console.timeEnd('createZone()');
 
         pathfinder.setZoneData(ZONE, zone);

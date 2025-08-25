@@ -35,9 +35,9 @@ export function funnel3D(start: Vector3, end: Vector3, portals?: Array<{ left: V
         const right = portals[i].right;
 
         // Update right vertex.
-        if (Utils.triarea2(portalApex, portalRight, right) <= 0.0) {
+        if (Utils.judgeDir(portalApex, portalRight, right) >= 0.0) {
 
-            if (Utils.vequal(portalApex, portalRight) || Utils.triarea2(portalApex, portalLeft, right) > 0.0) {
+            if (Utils.vequal(portalApex, portalRight) || Utils.judgeDir(portalApex, portalLeft, right) < 0.0) {
                 // Tighten the funnel.
                 portalRight = right;
                 rightIndex = i;
@@ -64,9 +64,9 @@ export function funnel3D(start: Vector3, end: Vector3, portals?: Array<{ left: V
         }
 
         // Update left vertex.
-        if (Utils.triarea2(portalApex, portalLeft, left) >= 0.0) {
+        if (Utils.judgeDir(portalApex, portalLeft, left) <= 0.0) {
 
-            if (Utils.vequal(portalApex, portalLeft) || Utils.triarea2(portalApex, portalRight, left) < 0.0) {
+            if (Utils.vequal(portalApex, portalLeft) || Utils.judgeDir(portalApex, portalRight, left) > 0.0) {
 
                 // Tighten the funnel.
                 portalLeft = left;

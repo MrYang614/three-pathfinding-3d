@@ -83,6 +83,12 @@ class Utils {
         return bx * az - ax * bz;
     }
 
+    static judgeDir(a: Vector3, b: Vector3, c: Vector3) {
+        const ab = new Vector3().subVectors(b, a).normalize();
+        const ac = new Vector3().subVectors(c, a).normalize();
+        return ab.cross(ac).y;
+    }
+
     static vequal(a: Vector3, b: Vector3) {
         return this.distanceToSquared(a, b) < 0.00001;
     }

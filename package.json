@@ -30,7 +30,7 @@
     "package.json"
   ],
   "peerDependencies": {
-    "three": ">=0.153.1"
+    "three": ">=0.179.0"
   },
   "devDependencies": {
     "@types/three": "^0.179.0",

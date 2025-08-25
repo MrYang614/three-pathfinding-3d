@@ -116,10 +116,15 @@ class Pathfinding {
 
         if (paths.length) {
             const portal1 = getPortalFromTo(closestNode, paths[0]);
-            channelPortals.push({
+            const portal = {
                 left: vertices[portal1[0]],
                 right: vertices[portal1[1]]
-            });
+            };
+            const v1 = new Vector3().subVectors(startPosition, portal.left).normalize();
+            const v2 = new Vector3().subVectors(portal.right, startPosition).normalize();
+            if (v1.dot(v2) !== 1) {
+                channelPortals.push(portal);
+            }
         }
 
         for (let i = 0; i < paths.length; i++) {
@@ -141,9 +146,29 @@ class Pathfinding {
             right: targetPosition
         });
 
-        const channelPath: { left: Vector3, right: Vector3; }[] = [...channelPortals];
+        const newChannelPortals: { left: Vector3, right: Vector3; }[] = [];
+        {
+            // redefine the portal's left and right
+            let apex = startPosition.clone();
+            for (let i = 0; i < channelPortals.length; i++) {
+                const portal = channelPortals[i];
+                if (Utils.judgeDir(apex, portal.left, portal.right) < 0) {
+                    newChannelPortals.push({
+                        left: portal.left,
+                        right: portal.right
+                    });
+                } else {
+                    newChannelPortals.push({
+                        left: portal.right,
+                        right: portal.left
+                    });
+                }
+                apex.addVectors(portal.left, portal.right).multiplyScalar(0.5);
+            }
+        }
 
-        const path = funnel3D(startPosition, targetPosition, channelPortals);
+
+        const path = funnel3D(startPosition, targetPosition, newChannelPortals);
 
         // Return the path, omitting first position (which is already known).
         // const path = channel.path.map((c) => new Vector3(c.x, c.y, c.z));
@@ -152,7 +177,7 @@ class Pathfinding {
         return {
             path,
             nodePath: nodePath,
-            channelPath: channelPath
+            channelPath: newChannelPortals
         };
     }
 
