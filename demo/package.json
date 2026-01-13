@@ -15,6 +15,6 @@
     },
     "dependencies": {
         "three": "^0.179.1",
-        "three-pathfinding-3d": "^1.0.6"
+        "three-pathfinding-3d": "../"
     }
 }

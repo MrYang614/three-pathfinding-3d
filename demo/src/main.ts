@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Pathfinding, PathfindingHelper, } from "three-pathfinding-3d";
+import { Pathfinding, PathfindingHelper, } from "three-pathfinding-3d/src";
 
 const viewport = document.getElementById("app");
 
