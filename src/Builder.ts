@@ -151,11 +151,12 @@ export const Builder = (function () {
 
     function _buildPolygonsFromGeometry(geometry: BufferGeometry) {
 
-        const polygons: Polygon[] = [];
-        const vertices = [];
-
         const position = geometry.attributes.position;
         const index = geometry.index;
+
+        const polygons: Polygon[] = new Array(index.count / 3);
+        const vertices = new Array(position.count);
+        const vertexPolygonMap = new Array(index.count / 3);
 
         // Constructing the neighbor graph brute force is O(n²). To avoid that,
         // create a map from vertices to the polygons that contain them, and use it
@@ -163,20 +164,18 @@ export const Builder = (function () {
         // is related to connectivity of the mesh.
 
         /** Array of polygon objects by vertex index. */
-        const vertexPolygonMap = [];
 
         for (let i = 0; i < position.count; i++) {
-            vertices.push(new Vector3().fromBufferAttribute(position, i));
+            vertices[i] = new Vector3().fromBufferAttribute(position, i);
             vertexPolygonMap[i] = [];
         }
 
-        // Convert the faces into a custom format that supports more than 3 vertices
         for (let i = 0; i < index.count; i += 3) {
             const a = index.getX(i);
             const b = index.getX(i + 1);
             const c = index.getX(i + 2);
             const poly = { vertexIds: [a, b, c], neighbours: null } as Polygon;;
-            polygons.push(poly);
+            polygons[i / 3] = poly;
             vertexPolygonMap[a].push(poly);
             vertexPolygonMap[b].push(poly);
             vertexPolygonMap[c].push(poly);
