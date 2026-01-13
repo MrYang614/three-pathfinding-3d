@@ -4,7 +4,7 @@
 
 PS: 由于 three-pathfinding 作者目前没有维护，提交的pr也没有得到反馈，所以自己新建了一个库，其中大部分代码从 three-pathfinding 拷贝而来，解决此库未解决的几个问题。
 
-如有侵权请联系我:email：526838933@qq.com
+联系我:email：526838933@qq.com
 
 three-pathfingding-3d 由 three-pathfinding 优化而来，修复了该库存在的几个已知问题：
 
