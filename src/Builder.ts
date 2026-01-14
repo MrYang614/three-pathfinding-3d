@@ -27,29 +27,19 @@ export const Builder = (function () {
 
         const groups = _buildPolygonGroups(navMesh);
 
-        // TODO: This block represents a large portion of navigation mesh construction time
-        // and could probably be optimized. For example, construct portals while
-        // determining the neighbor graph.
         zone.groups = new Array(groups.length);
+        const zone_vertices = zone.vertices;
         groups.forEach((group, groupIndex) => {
-
-            const indexByPolygon = new Map(); // { polygon: index in group }
-            group.forEach((poly, polyIndex) => { indexByPolygon.set(poly, polyIndex); });
 
             const newGroup = new Array(group.length);
             group.forEach((poly, polyIndex) => {
 
-                const neighbourIndices = [];
-                poly.neighbours.forEach((n) => neighbourIndices.push(indexByPolygon.get(n)));
-
-                // Build a portal list to each neighbour
-                const portals = [];
-                poly.neighbours.forEach((n) => portals.push(_getSharedVerticesInOrder(poly, n)));
+                const poly_vertexIds = poly.vertexIds;
 
                 const centroid = new Vector3(0, 0, 0);
-                centroid.add(zone.vertices[poly.vertexIds[0]]);
-                centroid.add(zone.vertices[poly.vertexIds[1]]);
-                centroid.add(zone.vertices[poly.vertexIds[2]]);
+                centroid.add(zone_vertices[poly_vertexIds[0]]);
+                centroid.add(zone_vertices[poly_vertexIds[1]]);
+                centroid.add(zone_vertices[poly_vertexIds[2]]);
                 centroid.divideScalar(3);
                 centroid.x = Utils.roundNumber(centroid.x, 2);
                 centroid.y = Utils.roundNumber(centroid.y, 2);
@@ -57,10 +47,10 @@ export const Builder = (function () {
 
                 newGroup[polyIndex] = {
                     id: polyIndex,
-                    neighbours: neighbourIndices,
+                    neighbours: poly.neighbours.map((n) => n.group_idx),
                     vertexIds: poly.vertexIds,
                     centroid: centroid,
-                    portals: portals
+                    portals: poly.portals
                 };
             });
 
@@ -111,10 +101,12 @@ export const Builder = (function () {
         polygons.forEach((polygon) => {
             if (polygon.group !== undefined) {
                 // this polygon is already part of a group
+                polygon.group_idx = polygonGroups[polygon.group].length;
                 polygonGroups[polygon.group].push(polygon);
             } else {
                 // we need to make a new group and spread its ID to neighbors
                 polygon.group = polygonGroups.length;
+                polygon.group_idx = 0;
                 _spreadGroupId(polygon);
                 polygonGroups.push([polygon]);
             }
@@ -123,30 +115,43 @@ export const Builder = (function () {
         return polygonGroups;
     }
 
-    function _buildPolygonNeighbours(polygon: Polygon, vertexPolygonMap: Polygon[][]): Set<Polygon> {
-        const neighbours: Set<Polygon> = new Set();
+    function _buildPolygonNeighbours(polygon: Polygon, vertexPolygonMap: Polygon[][]) {
 
-        const groupA = vertexPolygonMap[polygon.vertexIds[0]];
-        const groupB = vertexPolygonMap[polygon.vertexIds[1]];
-        const groupC = vertexPolygonMap[polygon.vertexIds[2]];
+        const vertexIdx = polygon.vertexIds;
+
+        const [a, b, c] = vertexIdx;
+        const groupA = vertexPolygonMap[a];
+        const groupB = vertexPolygonMap[b];
+        const groupC = vertexPolygonMap[c];
 
         // It's only necessary to iterate groups A and B. Polygons contained only
         // in group C cannot share a >1 vertex with this polygon.
         // IMPORTANT: Bublé cannot compile for-of loops.
         groupA.forEach((candidate) => {
             if (candidate === polygon) return;
-            if (groupB.includes(candidate) || groupC.includes(candidate)) {
-                neighbours.add(candidate);
+            if (groupB.includes(candidate)) {
+                bind_neighbor(polygon, candidate, a, b);
             }
-        });
-        groupB.forEach((candidate) => {
-            if (candidate === polygon) return;
             if (groupC.includes(candidate)) {
-                neighbours.add(candidate);
+                bind_neighbor(polygon, candidate, a, c);
             }
         });
 
-        return neighbours;
+        groupB.forEach((candidate) => {
+            if (candidate === polygon) return;
+            if (groupC.includes(candidate)) {
+                bind_neighbor(polygon, candidate, b, c);
+            }
+        });
+
+        function bind_neighbor(polygon1: Polygon, polygon2: Polygon, x: number, y: number) {
+            if (polygon1.neighbours.includes(polygon2)) return;
+            polygon1.neighbours.push(polygon2);
+            polygon1.portals.push([x, y]);
+            polygon2.neighbours.push(polygon);
+            polygon2.portals.push([x, y]);
+        }
+
     }
 
     function _buildPolygonsFromGeometry(geometry: BufferGeometry) {
@@ -164,7 +169,6 @@ export const Builder = (function () {
         // is related to connectivity of the mesh.
 
         /** Array of polygon objects by vertex index. */
-
         for (let i = 0; i < position.count; i++) {
             vertices[i] = new Vector3().fromBufferAttribute(position, i);
             vertexPolygonMap[i] = [];
@@ -174,49 +178,22 @@ export const Builder = (function () {
             const a = index.getX(i);
             const b = index.getX(i + 1);
             const c = index.getX(i + 2);
-            const poly = { vertexIds: [a, b, c], neighbours: null } as Polygon;;
+            const poly = { vertexIds: [a, b, c], neighbours: [], portals: [] } as Polygon;;
             polygons[i / 3] = poly;
             vertexPolygonMap[a].push(poly);
             vertexPolygonMap[b].push(poly);
             vertexPolygonMap[c].push(poly);
         }
 
+        // 优化
+
         // Build a list of adjacent polygons
-        polygons.forEach((polygon) => {
-            polygon.neighbours = _buildPolygonNeighbours(polygon, vertexPolygonMap);
-        });
+        polygons.forEach((polygon) => _buildPolygonNeighbours(polygon, vertexPolygonMap));
 
         return {
             polygons: polygons,
             vertices: vertices
         };
-    }
-
-    function _getSharedVerticesInOrder(a: Polygon, b: Polygon) {
-
-        const aList = a.vertexIds;
-        const a0 = aList[0], a1 = aList[1], a2 = aList[2];
-
-        const bList = b.vertexIds;
-        const shared0 = bList.includes(a0);
-        const shared1 = bList.includes(a1);
-        const shared2 = bList.includes(a2);
-
-        // it seems that we shouldn't have an a and b with <2 shared vertices here unless there's a bug
-        // in the neighbor identification code, or perhaps a malformed input geometry; 3 shared vertices
-        // is a kind of embarrassing but possible geometry we should handle
-        if (shared0 && shared1 && shared2) {
-            return Array.from(aList);
-        } else if (shared0 && shared1) {
-            return [a0, a1];
-        } else if (shared1 && shared2) {
-            return [a1, a2];
-        } else if (shared0 && shared2) {
-            return [a2, a0]; // this ordering will affect the string pull algorithm later, not clear if significant
-        } else {
-            console.warn("Error processing navigation mesh neighbors; neighbors with <2 shared vertices found.");
-            return [];
-        }
     }
 
     return {

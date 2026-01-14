@@ -31,8 +31,10 @@ type Node = {
 
 type Polygon = {
     group: number,
-    neighbours: Set<Polygon>;
+    neighbours: Polygon[];
     vertexIds: number[];
+    group_idx?: number;
+    portals: number[][];
 };
 
 /**
