@@ -1,6 +1,6 @@
 {
   "name": "three-pathfinding-3d",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A 3D pathfinding library for Three.js， supporting navigation meshes (navmeshes) and various pathfinding algorithms.",
   "main": "./src/index.js",
   "types": "./build/types/src/index.d.ts",
